@@ -38,12 +38,14 @@
                         </div>
                         <div class="my-2">
                             <label for="method">Method</label>
-                            <select class="w-full rounded-md border-gray-400" name="method" id="method">
+                            <input list="methods" class="form-control" name="method" id="method">
+
+                            <datalist id="methods">
                                 <option value="" disabled selected>Choose One</option>
                                 @foreach($methods as $method)
                                     <option value="{{$method->id}}" {{old('method') != null ? old('method') == $method->id ? 'selected' : '' : $method->id == $activity->id_method ? 'selected' : ''}}>{{$method->name}}</option>
                                 @endforeach
-                            </select>
+                            </datalist>
                             @error('method')
                                 <div class="text-red-500">{{ $message }}</div>
                             @enderror

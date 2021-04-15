@@ -17,11 +17,31 @@ class ActivityController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    function map_activity_method($methods){
+        $method_act_map = array();
+        foreach ($methods as $method) {
+            $method_act_map[$method->name] = $this->map_activity_month($method->activitys);
+        }
+        return $method_act_map;
+    }
+
+    function map_activity_month($activitys){
+        $month_act = array();
+        foreach ($activitys as $activity) {
+            $month_act[(int)date('m',strtotime($activity->start_date))][] = $activity;
+        }
+        return $month_act;
+    }
+    
+     public function index()
     {
         $methods = Methods::all();
         $activitys = LearningActivitys::all();
-        return view('learning_activity.index',compact('methods','activitys'));
+        $method_act_map = $this->map_activity_method($methods);
+        // foreach ($method_act_map as $key => $map) {
+        //     dd(array_key_exists(1, $map));
+        // };
+        return view('learning_activity.index',compact('methods','activitys','method_act_map'));
     }
 
     /**
@@ -47,7 +67,7 @@ class ActivityController extends Controller
             'title' => 'required',
             'start' => 'required',
             'end' => 'required',
-            'method' => 'required|exists:methods,id',
+            'method' => 'required',
         ]);
  
         if ($validator->fails()) {
@@ -61,7 +81,20 @@ class ActivityController extends Controller
         $data->title = $request->title;
         $data->start_date = $request->start;
         $data->end_date = $request->end;
-        $data->id_method = $request->method;
+        if(gettype($request->method) == 'string'){
+            if (($method = Methods::where('name','like','%'.$request->method.'%')->first()) == null) {
+                $method = new Methods;
+                $method->name = $request->method;
+                $method->save();
+            }
+        }else{
+            if(($method = Methods::find($request->method)) == null){
+                $method = new Methods;
+                $method->name = $request->method;
+                $method->save();
+            }
+        }
+        $data->id_method = $method->id;
         $data->save();
         return redirect(route('learning_activity.index'));
     }
