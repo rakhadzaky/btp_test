@@ -11,7 +11,7 @@
                 <div class="p-6 bg-white border-b border-gray-200">
                     <div class="row">
                         <div class="col-md-6">
-                            <button type="button" class="btn bg-green-500 rounded-md text-white hover:bg-green-700 input-act" data-toggle="modal" data-target="#myModal">Add Activity</button>
+                            <button type="button" id="input_act" class="btn bg-green-500 rounded-md text-white hover:bg-green-700" data-toggle="modal" data-target="#myModal">Add Activity</button>
                         </div>
                         <div class="col-md-6 text-right">
                             <button class="btn btn-light" id="refresh"><span class="fas fa-sync-alt"></span></button>
@@ -20,6 +20,7 @@
                             var learningSchedule = ""
 
                             $("#refresh").click(function(){
+                                loadingSchedule()
                                 $.get("refresh", function (data) {
                                     learningSchedule = data
                                     showSchedule()
@@ -54,6 +55,15 @@
                                 </td>
                             </tr>
                             <script>
+                                function loadingSchedule(){
+                                    $("#schedule").html("<tr>"+
+                                        "<td colspan='13' class='text-center'>"+
+                                            "<div class='spinner-grow text-secondary' role='status'>"+
+                                                "<span class='sr-only'>Loading...</span>"+
+                                            "</div>"+
+                                        "</td>"+
+                                    "</tr>")
+                                }
                                 function showSchedule(){
                                     $("#schedule").html("")
                                     let id = 1
@@ -69,7 +79,7 @@
                                                     "</button>"+
                                                     "<button type='button' data-id='"+act.id+"' class='btn text-red-500 hover:text-red-700 delete_act'>"+
                                                         "<span class='fas fa-trash'></span>"+
-                                                    "</button>")
+                                                    "</button><hr>")
                                                 })
                                             }
                                         }
@@ -92,8 +102,13 @@
                 }
             })
 
-            $('body').on('click', '.edit_act', function () {
-                $("#input_form_act")[0].reset();
+            $('#input_act').on('click', function () {
+                $('#title_modal').html("Add New Activity");
+                $("input[name=id_input]").val("");
+                $("input[name=title_input]").val("");
+                $("input[name=start_input]").val("");
+                $("input[name=end_input]").val("");
+                $("input[name=method_input]").val("");
             });
 
             $('body').on('click', '.edit_act', function () {
@@ -114,20 +129,40 @@
             
             $('body').on('click', '.delete_act', function () {
                 var act_id = $(this).data("id");
-                confirm("Are You sure want to delete !");
-
-                let url_delete = "{{ route('learning_activity.index') }}"+'/'+act_id
-                console.log(url_delete)
-                $.ajax({
-                    type: "DELETE",
-                    url: url_delete,
-                    success: function (data) {
-                        $("#refresh").click()
-                    },
-                    error: function (data) {
-                        console.log('Error:', data);
-                    }
-                });
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: "You won't be able to revert this!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes, delete it!'
+                }).then((result) => {
+                if (result.isConfirmed) {
+                    let url_delete = "{{ route('learning_activity.index') }}"+'/'+act_id
+                    console.log(url_delete)
+                    $.ajax({
+                        type: "DELETE",
+                        url: url_delete,
+                        success: function (data) {
+                            Swal.fire(
+                                'Deleted!',
+                                'Your file has been deleted.',
+                                'success'
+                            )
+                            $("#refresh").click()
+                        },
+                        error: function (data) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Oops...',
+                                text: 'Cannot delete the data!',
+                            })
+                            console.log('Error:', data);
+                        }
+                    });
+                }
+                })
             });
 
             $( document ).ready(function() {

@@ -82,6 +82,11 @@
               $("#input_form_act")[0].reset();
               $('#close_modal').click();
               $("#refresh").click()
+              Swal.fire(
+                  'Inserted!',
+                  'Your data has been added.',
+                  'success'
+              )
             }else{
               if (response.validation.title_input) {
                 $("div[name=val_title]").html(response.validation.title_input[0]); 
