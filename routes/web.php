@@ -2,6 +2,9 @@
 
 use Illuminate\Support\Facades\Route;
 
+use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\MethodController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -20,7 +23,8 @@ Route::get('/', function () {
 Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth'])->name('dashboard');
-Route::resource('learning_activity','\App\Http\Controllers\ActivityController');
-Route::resource('method','\App\Http\Controllers\MethodController');
+Route::resource('learning_activity', ActivityController::class);
+Route::get('refresh', [ActivityController::class, 'refresh_data']);
+Route::resource('method', MethodController::class);
 
 require __DIR__.'/auth.php';

@@ -32,15 +32,18 @@ class ActivityController extends Controller
         }
         return $month_act;
     }
+
+    public function refresh_data(){
+        $methods = Methods::all();
+        $method_act_map = $this->map_activity_method($methods);
+        return response()->json($method_act_map);
+    }
     
-     public function index()
+    public function index()
     {
         $methods = Methods::all();
         $activitys = LearningActivitys::all();
         $method_act_map = $this->map_activity_method($methods);
-        // foreach ($method_act_map as $key => $map) {
-        //     dd(array_key_exists(1, $map));
-        // };
         return view('learning_activity.index',compact('methods','activitys','method_act_map'));
     }
 
@@ -64,39 +67,41 @@ class ActivityController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'title' => 'required',
-            'start' => 'required',
-            'end' => 'required',
-            'method' => 'required',
+            'title_input' => 'required',
+            'start_input' => 'required',
+            'end_input' => 'required',
+            'method_input' => 'required',
         ]);
  
         if ($validator->fails()) {
-            return redirect()
-                        ->back()
-                        ->withErrors($validator)
-                        ->withInput();
+            return response()->json(['status'=>'fail','validation'=>$validator->messages()]);
         }
 
-        $data = new LearningActivitys;
-        $data->title = $request->title;
-        $data->start_date = $request->start;
-        $data->end_date = $request->end;
-        if(gettype($request->method) == 'string'){
-            if (($method = Methods::where('name','like','%'.$request->method.'%')->first()) == null) {
+        if ($request->id_input != null) {
+            $data = LearningActivitys::find($request->id_input);
+        }else{
+            $data = new LearningActivitys;
+        }
+        $data->title = $request->title_input;
+        $data->start_date = $request->start_input;
+        $data->end_date = $request->end_input;
+        if(!is_numeric($request->method_input)){
+            if (($method = Methods::where('name','like','%'.$request->method_input.'%')->first()) == null) {
                 $method = new Methods;
-                $method->name = $request->method;
+                $method->name = $request->method_input;
                 $method->save();
             }
         }else{
-            if(($method = Methods::find($request->method)) == null){
+            if(($method = Methods::find($request->method_input)) == null){
                 $method = new Methods;
-                $method->name = $request->method;
+                $method->name = $request->method_input;
                 $method->save();
             }
         }
         $data->id_method = $method->id;
         $data->save();
-        return redirect(route('learning_activity.index'));
+        // return redirect(route('learning_activity.index'));
+        return response()->json(['status'=>'success','success'=>'Ajax request submitted successfully']);
     }
 
     /**
@@ -118,9 +123,10 @@ class ActivityController extends Controller
      */
     public function edit($id)
     {
-        $methods = Methods::all();
+        // $methods = Methods::all();
         $activity = LearningActivitys::find($id);
-        return view('learning_activity.edit',compact('methods', 'activity'));
+        // return view('learning_activity.edit',compact('methods', 'activity'));
+        return response()->json($activity);
     }
 
     /**
@@ -133,26 +139,23 @@ class ActivityController extends Controller
     public function update(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
-            'title' => 'required',
-            'start' => 'required',
-            'end' => 'required',
-            'method' => 'required|exists:methods,id',
+            'title_edit' => 'required',
+            'start_edit' => 'required',
+            'end_edit' => 'required',
+            'method_edit' => 'required|exists:methods,id',
         ]);
  
         if ($validator->fails()) {
-            return redirect()
-                        ->back()
-                        ->withErrors($validator)
-                        ->withInput();
+            return response()->json(['status'=>'fail','validation'=>$validator->messages()]);
         }
 
         $data = LearningActivitys::find($id);
-        $data->title = $request->title;
-        $data->start_date = $request->start;
-        $data->end_date = $request->end;
-        $data->id_method = $request->method;
+        $data->title = $request->title_edit;
+        $data->start_date = $request->start_edit;
+        $data->end_date = $request->end_edit;
+        $data->id_method = $request->method_edit;
         $data->save();
-        return redirect(route('learning_activity.index'));
+        return response()->json(['status'=>'success','success'=>'Ajax request submitted successfully']);
     }
 
     /**
@@ -165,6 +168,7 @@ class ActivityController extends Controller
     {
         $data = LearningActivitys::find($id);
         $data->delete();
-        return redirect(route('learning_activity.index'));
+        // return redirect(route('learning_activity.index'));
+        return response()->json(['success'=>'Activity deleted!']);
     }
 }

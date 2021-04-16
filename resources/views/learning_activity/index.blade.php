@@ -9,7 +9,24 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 bg-white border-b border-gray-200">
-                    <button type="button" class="p-2.5 my-3 bg-green-500 rounded-md text-white hover:bg-green-700" data-toggle="modal" data-target="#myModal">Add Activity</button>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <button type="button" class="btn bg-green-500 rounded-md text-white hover:bg-green-700 input-act" data-toggle="modal" data-target="#myModal">Add Activity</button>
+                        </div>
+                        <div class="col-md-6 text-right">
+                            <button class="btn btn-light" id="refresh"><span class="fas fa-sync-alt"></span></button>
+                        </div>
+                        <script>
+                            var learningSchedule = ""
+
+                            $("#refresh").click(function(){
+                                $.get("refresh", function (data) {
+                                    learningSchedule = data
+                                    showSchedule()
+                                })
+                            });
+                        </script>
+                    </div>
                     @include('learning_activity.create_modal')
                     <table class="table table-borderless table-striped table-responsive">
                         <thead class="text-left">
@@ -28,43 +45,95 @@
                             <th>Desember</th>
                             <th></th>
                         </thead>
-                        <tbody class="text-left">
-                            @foreach($method_act_map as $key => $map)
-                                <tr>
-                                <td class="font-weight-bold">
-                                    {{$key}}
+                        <tbody class="text-left" id="schedule">
+                            <tr>
+                                <td colspan="13" class="text-center">
+                                    <div class="spinner-grow text-secondary" role="status">
+                                        <span class="sr-only">Loading...</span>
+                                    </div>
                                 </td>
-                                @for($i=1; $i<=12; $i++)
-                                    <td>
-                                        @if(array_key_exists($i, $map))
-                                            @foreach($map[$i] as $act)
-                                                {{$act->title}}<br>
-                                                <small class="text-primary">{{date('d M Y', strtotime($act->start_date))}} - {{date('d M Y', strtotime($act->end_date))}}</small><br>
-                                                <div>
-                                                    <form action="{{route('learning_activity.destroy', $act->id)}}" method="post">
-                                                        @method('delete')
-                                                        @csrf
-                                                        <button type="button" class="btn text-yellow-400 hover:text-yellow-700" data-toggle="modal" data-target="#myModal_edit{{$act->id}}">
-                                                            <span class='fas fa-edit'></span>
-                                                        </button>
-                                                        @include('learning_activity.edit_modal')
-                                                        <button type="submit" class="btn text-red-500 hover:text-red-700" onclick="return confirm('Are you sure?');">
-                                                            <span class="fas fa-trash"></span>
-                                                        </button>
-                                                    </form>
-                                                </div>
-                                                <hr>
-                                            @endforeach
-                                        @endif
-                                    </td>
-                                @endfor
-                                </tr>
-                            @endforeach
+                            </tr>
+                            <script>
+                                function showSchedule(){
+                                    $("#schedule").html("")
+                                    let id = 1
+                                    $.each(learningSchedule, function(key, map){
+                                        $("#schedule").append("<tr class='"+id+"'><td class='font-weight-bold'>"+key+"</td></tr>")
+                                        for (let month = 1; month <= 12; month++) {
+                                            $("."+id).append("<td class='"+id+month+"'></td>")
+                                            if (month in map) {
+                                                $.each(map[month], function(i, act){
+                                                    $("."+id+month).append(act.title+"<br><small class='text-primary'>"+act.start_date+" - "+act.end_date+"</small><br>"+
+                                                    "<button type='button' class='btn text-yellow-400 hover:text-yellow-700 edit_act' data-id='"+act.id+"' data-toggle='modal' data-target='#myModal'>"+
+                                                        "<span class='fas fa-edit'></span>"+
+                                                    "</button>"+
+                                                    "<button type='button' data-id='"+act.id+"' class='btn text-red-500 hover:text-red-700 delete_act'>"+
+                                                        "<span class='fas fa-trash'></span>"+
+                                                    "</button>")
+                                                })
+                                            }
+                                        }
+                                        id++
+                                    })
+                                    
+                                }
+                            </script>
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
+
+        <script>    
+
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
+            })
+
+            $('body').on('click', '.edit_act', function () {
+                $("#input_form_act")[0].reset();
+            });
+
+            $('body').on('click', '.edit_act', function () {
+                var act_id = $(this).data("id");
+
+                console.log(act_id)
+                let url_edit = "{{ route('learning_activity.index') }}"+'/'+act_id+'/edit'
+                $.get(url_edit, function (data) {
+                    $('#title_modal').html("Edit Activity");
+                    // $('#ajaxModel').modal('show');
+                    $("input[name=id_input]").val(data.id);
+                    $("input[name=title_input]").val(data.title);
+                    $("input[name=start_input]").val(data.start_date);
+                    $("input[name=end_input]").val(data.end_date);
+                    $("input[name=method_input]").val(data.id_method);
+                })
+            });
+            
+            $('body').on('click', '.delete_act', function () {
+                var act_id = $(this).data("id");
+                confirm("Are You sure want to delete !");
+
+                let url_delete = "{{ route('learning_activity.index') }}"+'/'+act_id
+                console.log(url_delete)
+                $.ajax({
+                    type: "DELETE",
+                    url: url_delete,
+                    success: function (data) {
+                        $("#refresh").click()
+                    },
+                    error: function (data) {
+                        console.log('Error:', data);
+                    }
+                });
+            });
+
+            $( document ).ready(function() {
+                $("#refresh").click()
+            });
+        </script>
 
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-5">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
